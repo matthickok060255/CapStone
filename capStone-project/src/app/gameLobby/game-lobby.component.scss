@@ -1,3 +1,13 @@
-.test {
-    margin: auto;
+.gameCard {
+    margin: 5px;
+}
+
+::ng-deep .mat-card {
+    background: var(--foreground-secondary) !important;
+    min-height: 100px;
+    color: var(--foreground-tertiary) !important;
+}
+
+.checkboxStyle {
+  margin-left: 10px;
 }

@@ -1,3 +1,21 @@
 <div>
-    Game Lobby Component
+    <div *ngFor="let game of games; let i = index">
+        <mat-card class="gameCard">
+            <mat-card-title>{{game.name}}</mat-card-title>
+            <mat-card-subtitle>Start Time: {{game.startTime}}</mat-card-subtitle>
+            <mat-card-subtitle
+            >Number of Werewolves: {{game.numWerewolfPlayers}}
+            <mat-checkbox class="checkboxStyle">Cop</mat-checkbox>
+            <mat-checkbox class="checkboxStyle">Psychic</mat-checkbox>
+            <mat-checkbox class="checkboxStyle">Reporter</mat-checkbox>
+          </mat-card-subtitle>
+            <mat-card-subtitle>
+              Min PLayers: {{game.minPlayers}}
+              Max Players: {{game.maxPLayers}}
+            </mat-card-subtitle>
+            <mat-card-subtitle>Round Times: {{game.roundTimer}} Seconds</mat-card-subtitle>
+            <button class="mat-button"> Join Game</button>
+        </mat-card>
+    </div>
+
 </div>
