@@ -1,7 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Params, ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
 import { CreateGameComponent } from './create-game.component';
 
-
+class mockActivatedRoute {
+  queryParams = {
+    subscribe: function() {}
+  };
+}
 
 describe('CreateGameComponent', () => {
   let component: CreateGameComponent;
@@ -9,7 +15,8 @@ describe('CreateGameComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CreateGameComponent ]
+      declarations: [ CreateGameComponent ],
+      providers: [{provide: ActivatedRoute, useClass: mockActivatedRoute}]
     })
     .compileComponents();
   });

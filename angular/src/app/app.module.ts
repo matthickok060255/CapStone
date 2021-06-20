@@ -8,6 +8,7 @@ import { AppComponent } from './app.component';
 import { CreateGameComponent } from './create-game/create-game.component';
 import { GameLobbyComponent } from './gameLobby/game-lobby.component';
 import { NaviationBarComponent } from './navigation-bar/navigation-bar.component';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,7 @@ import { NaviationBarComponent } from './navigation-bar/navigation-bar.component
     BrowserModule,
     AppRoutingModule,
     AngularMaterialModule,
-    
+    HttpClientModule
   ],
   providers: [],
   bootstrap: [AppComponent]

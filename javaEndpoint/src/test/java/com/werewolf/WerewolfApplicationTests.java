@@ -4,6 +4,7 @@ package com.werewolf;
 
 import com.werewolf.domain.Game;
 import com.werewolf.domain.GameRepository;
+import com.werewolf.domain.GameStateEnum;
 import com.werewolf.utils.ISO8601DateParser;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -51,6 +52,7 @@ public class WerewolfApplicationTests extends AbstractTest {
 		game.setCop(true);
 		game.setStartTime("2010-10-27T11:58:22+03:00");
 		game.setRoundTimer(60);
+		game.setGameState(GameStateEnum.ACTIVE);
 
 		String inputJson = super.mapToJson(game);
 		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.post(uri)
@@ -64,6 +66,7 @@ public class WerewolfApplicationTests extends AbstractTest {
 						.param("isReporter", "false")
 						.param("startTime", "2010-10-27T11:58:22+03:00")
 						.param("roundTimer", "60")
+						.param("gameState", "ACTIVE")
 				.contentType(MediaType.MULTIPART_FORM_DATA)
 				).andReturn();
 

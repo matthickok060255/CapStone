@@ -15,12 +15,14 @@ public class Game {
     private String password;
     private Integer maxPlayers;
     private Integer minPlayers;
+    private Integer currentPlayers;
     private Integer numWerewolfPlayers;
     private boolean isPsychic;
     private boolean isReporter;
     private boolean isCop;
     private String startTime;
     private Integer roundTimer;
+    private GameStateEnum gameState;
 
     public Integer getId() {
         return id;
@@ -66,6 +68,10 @@ public class Game {
         return roundTimer;
     }
 
+    public GameStateEnum getGameState() {
+        return gameState;
+    }
+
     public void setId(Integer id) {
         this.id = id;
     }
@@ -108,5 +114,9 @@ public class Game {
 
     public void setRoundTimer(Integer roundTimer) {
         this.roundTimer = roundTimer;
+    }
+
+    public void setGameState(GameStateEnum gameState) {
+        this.gameState = gameState;
     }
 }
