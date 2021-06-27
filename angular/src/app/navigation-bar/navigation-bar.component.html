@@ -1,4 +1,6 @@
 <nav>
+  <button class="mat-button" (click)="createGame()">Create Game</button>
     <h2 class="title secondary-font">The Werewolf Game</h2>
+    <div *ngIf="user"> {{user.username}}</div>
     <mat-icon  (click)="toggleTheme()">{{bulb}}</mat-icon>
   </nav>

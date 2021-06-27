@@ -15,7 +15,7 @@ export class GameLobbyComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = []
 
   constructor(private gameLobbyService: GameLobbyService,
-    private router: Router) { }
+    public router: Router) { }
 
 
   ngOnInit() {

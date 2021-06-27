@@ -12,6 +12,7 @@ import { ActivatedRoute } from '@angular/router';
 export class CreateGameComponent implements OnInit, OnDestroy  {
   private gameId!: number;
   private subscriptions: Subscription[] = []
+  private game!: Game;
 
   constructor(
     private route: ActivatedRoute,
@@ -22,6 +23,11 @@ export class CreateGameComponent implements OnInit, OnDestroy  {
 
     this.route.queryParams.subscribe(params => {
       this.gameId = params['gameId'];
+      if (this.gameId) {
+
+      } else {
+
+      }
     });
 
 }

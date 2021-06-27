@@ -42,4 +42,10 @@ describe('GameLobbyComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should call router', () => {
+    let spy = spyOn(component.router, 'navigateByUrl');
+    component.joinGame(4);
+    expect(component.router.navigateByUrl).toHaveBeenCalled();
+  });
 });

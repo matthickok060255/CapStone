@@ -9,7 +9,7 @@ import { catchError, retry } from 'rxjs/operators';
     providedIn: "root"
   })
 export class GameLobbyService {
-  private REST_API_SERVER = "http://localhost:8080";
+  private REST_API_SERVER = "http://localhost:8080/api";
 
   constructor(private httpClient: HttpClient) { }
 
@@ -19,7 +19,7 @@ export class GameLobbyService {
    * @returns Observable<Game>
    */
   getGames(): Observable<Game[]> {
-    return this.httpClient.get<Game[]>(this.REST_API_SERVER + "/api/allCreatedGames")
+    return this.httpClient.get<Game[]>(this.REST_API_SERVER + "/allCreatedGames")
     .pipe(catchError(ServicesUtils.handleError));
   }
 

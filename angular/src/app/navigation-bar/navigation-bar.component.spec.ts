@@ -1,7 +1,19 @@
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NaviationBarComponent } from './navigation-bar.component';
 
+class mockActivatedRoute {
+  queryParams = {
+    subscribe: function() {}
+  };
+}
 
+class mockRouter {
+  navigateByUrl(url: any, extras?: any): any {
+    return null;
+  }
+}
 
 describe('NaviationBarComponent', () => {
   let component: NaviationBarComponent;
@@ -9,7 +21,10 @@ describe('NaviationBarComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ NaviationBarComponent ]
+      imports: [HttpClientTestingModule],
+      declarations: [ NaviationBarComponent ],
+      providers: [{provide: ActivatedRoute, useClass: mockActivatedRoute},
+        {provide: Router, useClass: mockRouter}]
     })
     .compileComponents();
   });
