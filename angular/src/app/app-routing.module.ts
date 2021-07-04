@@ -10,9 +10,10 @@ const accountModule = () => import('./account/account.module').then(x => x.Accou
 const routes: Routes = [
   {path: '', redirectTo: 'gameLobby', pathMatch: 'full'},
   { path: 'createGame/:id', component: CreateGameComponent, canActivate: [AuthGuard] },
-  { path: 'createGame/', component: CreateGameComponent, canActivate: [AuthGuard] },
+  { path: 'createGame', component: CreateGameComponent, canActivate: [AuthGuard] },
   { path: 'gameLobby', component: GameLobbyComponent,  canActivate: [AuthGuard] },
   { path: 'activeGame/:id', component: ActiveGameComponent,  canActivate: [AuthGuard]  },
+  { path: 'activeGame', component: ActiveGameComponent,  canActivate: [AuthGuard]  },
   { path: 'account', loadChildren: accountModule },
 ];
 

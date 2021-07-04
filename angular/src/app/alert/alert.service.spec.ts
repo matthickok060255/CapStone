@@ -4,7 +4,6 @@ import {
   HttpTestingController
 } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
-import { User } from '../domainObjects/user';
 import { AlertService } from './alert.service';
 
 class mockRouter {

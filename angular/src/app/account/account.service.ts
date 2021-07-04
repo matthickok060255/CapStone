@@ -27,7 +27,7 @@ export class AccountService {
       let params = new HttpParams();
 params = params.append('username', username);
 params = params.append('password', password);
-        return this.http.post<User>(`${environment.apiUrl}/authenticate`,params)
+        return this.http.post<User>(`${environment.apiUrl}/login`,params)
             .pipe(map(user => {
                 // store user details and jwt token in local storage to keep user logged in between page refreshes
                 localStorage.setItem('user', JSON.stringify(user));
@@ -44,7 +44,7 @@ params = params.append('password', password);
     }
 
     register(user: User) {
-        return this.http.post(`${environment.apiUrl}/users/register`, user);
+        return this.http.post(`${environment.apiUrl}/users/createUser`, user);
     }
 
     getAll() {

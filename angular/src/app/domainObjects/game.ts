@@ -2,8 +2,8 @@ import { gameState } from "./gameStateEnum";
 
 export class Game {
     public id!: number
-    public name: String;
-    public password: String;
+    public name: string;
+    public password: string;
     public maxPlayers: number;
     public minPlayers: number;
     public currentPlayers: number;
@@ -16,7 +16,7 @@ export class Game {
     public gameState: gameState;
 
     constructor(
-        name: String,
+        name: string,
         maxPLayers: number,
         minPlayers: number,
         currentPlayers: number,
@@ -24,14 +24,14 @@ export class Game {
         psychic: boolean,
         reporter: boolean,
         cop: boolean,
-        password: String,
+        password: string,
         startTime: Date,
         roundTimer: number,
         gameState: gameState) {
             this.name = name;
             this.maxPlayers = maxPLayers;
             this.minPlayers = minPlayers;
-            this.currentPlayers = currentPlayers;
+            this.currentPlayers = currentPlayers
             this.password = password;
             this.numWerewolfPlayers = numWerewolfPlayers;
             this.psychic = psychic;

@@ -1,3 +1,75 @@
 <div>
-    Create Game Component
+  <form [formGroup]="createGameForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="name">Game Name:</label>
+      <input [attr.disabled]="isActive ? '' : null" type="text" formControlName="name" class="form-control"
+        [ngClass]="{ 'is-invalid': f.name.errors }" />
+      <div *ngIf="f.name.errors" class="invalid-feedback">
+        <div *ngIf="f.name.errors.required">name is required</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input [attr.disabled]="isActive ? '' : null" type="password" formControlName="password" class="form-control"
+        [ngClass]="{ 'is-invalid': f.password.errors }" />
+      <div *ngIf="f.password.errors" class="invalid-feedback">
+        <div *ngIf="f.password.errors.required">Password is required</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="maxPlayers">Max Players:</label>
+      <input [attr.disabled]="isActive ? '' : null" type="maxPlayers" formControlName="maxPlayers" class="form-control"
+        [ngClass]="{ 'is-invalid': f.maxPlayers.errors }" />
+      <div *ngIf="f.maxPlayers.errors" class="invalid-feedback">
+        <div *ngIf="f.maxPlayers.errors.required">Max Players is required</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="minPlayers">Min Players:</label>
+      <input [attr.disabled]="isActive ? '' : null" type="minPlayers" formControlName="minPlayers" class="form-control"
+        [ngClass]="{ 'is-invalid': f.minPlayers.errors }" />
+      <div *ngIf="f.minPlayers.errors" class="invalid-feedback">
+        <div *ngIf="f.minPlayers.errors.required">Min Players must be 5 or more</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="numWerewolfPlayers">Number of Werewolves: </label>
+      <input [attr.disabled]="isActive ? '' : null" type="numWerewolfPlayers" formControlName="numWerewolfPlayers" class="form-control"
+        [ngClass]="{ 'is-invalid': f.numWerewolfPlayers.errors }" />
+      <div *ngIf="f.numWerewolfPlayers.errors" class="invalid-feedback">
+        <div *ngIf="f.numWerewolfPlayers.errors.required">Number of Werewolves is required</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="psychic">Is there a Psychic: </label>
+      <mat-checkbox [disabled]="isActive" type="psychic" formControlName="psychic" class="checkboxStyle"></mat-checkbox>
+    </div>
+    <div class="form-group">
+      <label for="cop">Is there a cop: </label>
+      <mat-checkbox [disabled]="isActive" type="cop" formControlName="cop" class="checkboxStyle"></mat-checkbox>
+    </div>
+    <div class="form-group">
+      <label for="reporter">Is there a reporter: </label>
+      <mat-checkbox [disabled]="isActive" type="reporter" formControlName="reporter" class="checkboxStyle"></mat-checkbox>
+    </div>
+    <div class="form-group">
+      <button *ngIf="!isActive" class="mat-button">
+        <span class="spinner-border spinner-border-sm mr-1"></span>
+        Create Game
+      </button>
+    </div>
+  </form>
+
+  <div class="form-group">
+    <button *ngIf="isActive" (click)="startActiveGame()" class="mat-button">
+      <span class="spinner-border spinner-border-sm mr-1"></span>
+      Start Game
+    </button>
+  </div>
+
+  <div> Current Players: {{pusherIdToUserNameMap.size}}
+    <div *ngFor="let item of pusherIdToUserNameMap | keyvalue">
+      <b>{{item.value}}</b>
+  </div>
+  </div>
 </div>

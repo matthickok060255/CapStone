@@ -8,6 +8,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.text.ParseException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -33,7 +34,7 @@ public class GameController {
 
     @PostMapping(path = "/createGame") // Map ONLY POST Requests
     public @ResponseBody
-    String addNewGame(@RequestParam String name,
+    Game addNewGame(@RequestParam String name,
                       @RequestParam String password,
                       @RequestParam Integer maxPlayers,
                       @RequestParam Integer minPlayers,
@@ -41,7 +42,6 @@ public class GameController {
                       @RequestParam boolean isPsychics,
                       @RequestParam boolean isReporter,
                       @RequestParam boolean isCop,
-                      @RequestParam String startTime,
                       @RequestParam Integer roundTimer,
                       @RequestParam GameStateEnum gameState) throws ParseException {
         // @ResponseBody means the returned String is the response, not a view name
@@ -56,11 +56,9 @@ public class GameController {
         game.setPsychic(isPsychics);
         game.setReporter(isReporter);
         game.setCop(isCop);
-        game.setStartTime(startTime);
         game.setRoundTimer(roundTimer);
         game.setGameState(gameState);
-        gameRepository.save(game);
-        return "Game was successfully Created";
+        return gameRepository.save(game);
     }
 
     @GetMapping(path = "/allCreatedGames")
@@ -76,6 +74,13 @@ public class GameController {
     Iterable<Game> getAllUsers() {
         // This returns a JSON or XML with the Games
         return gameRepository.findAll();
+    }
+
+    @GetMapping(path = "/games/{id}")
+    public @ResponseBody
+    Optional<Game> getUserById(@PathVariable Integer id) {
+        // This returns a JSON or XML with the Games
+        return gameRepository.findById(id);
     }
 
     @PutMapping("/games/{id}")
