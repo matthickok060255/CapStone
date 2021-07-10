@@ -1,7 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Board } from '../domainObjects/board';
 import { ActiveGameService } from './active-game.service';
 import Pusher from 'pusher-js';
+import { User } from '../domainObjects/user';
+import { AccountService } from '../account/account.service';
+import { Game } from '../domainObjects/game';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CreateGameService } from '../create-game/create-game.service';
+import { Subscription } from 'rxjs';
 
 // set game constants
 const NUM_PLAYERS: number = 2;
@@ -13,35 +19,54 @@ const BOARD_SIZE: number = 6;
   styleUrls: ['./active-game.component.scss'],
   providers: [ActiveGameService]
 })
-export class ActiveGameComponent {
+export class ActiveGameComponent implements OnInit, OnDestroy {
   canPlay: boolean = true;
   player: number = 0;
-  players: number = 0;
-  gameId!: string;
+  gameId!: number;
+  game!: Game;
   gameUrl: string = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + "/activeGame";
   pusherChannel: any;
+  players: any[] = [];
+  pusherIdToUserNameMap = new Map<string, string>();  //NEED TO CHANGE TO REFERENCE FULL ACTIVE USER OBJECT
+  user: User;
+  role!: string; // CHANGE TO ENUM
+
+  private subscriptions: Subscription[] = []
 
   constructor(
-    private activeGameService: ActiveGameService
+    private activeGameService: ActiveGameService,
+    private accountService: AccountService,
+    private route: ActivatedRoute,
+    private createGameService: CreateGameService,
   ) {
-    this.createBoards();
+    this.user = this.accountService.userValue;
+    this.role = String(localStorage.getItem("role"));
+    this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
 
     this.initPusher();
-    this.listenForChanges();
+
+  }
+
+  ngOnInit() {
+    this.subscriptions.push(this.route.params.subscribe(params => {
+      this.gameId = params['id'];
+      if (this.gameId) {
+        this.listenForChanges();
+        this.createGameService.getGamebyId(this.gameId).subscribe(game => {
+          console.log(game);
+          this.game = game;
+        });
+      }
+    }));
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe())
   }
 
 
   // initialise Pusher and bind to presence channel
   initPusher(): ActiveGameComponent {
-    console.log(this.gameUrl);
-    // findOrCreate unique channel ID
-    let id = this.getQueryParam('id');
-    if (!id) {
-      id = this.getUniqueId();
-      location.search = location.search ? '&id=' + id : 'id=' + id;
-    }
-    this.gameId = id;
-
     // init pusher
     const pusher = new Pusher('cd3b623ce769e9f6154f', {
       authEndpoint: 'http://localhost:3000/pusher/auth',
@@ -49,128 +74,139 @@ export class ActiveGameComponent {
     });
 
     // bind to relevant Pusher presence channel
-    this.pusherChannel = pusher.subscribe(this.gameId);
-    this.pusherChannel.bind('pusher:member_added', () => { this.players++ })
-    this.pusherChannel.bind('pusher:subscription_succeeded', (members: { count: number; }) => {
-      this.players = members.count;
-      console.log(this.players);
-      this.setPlayer(this.players);
-      //this.toastr.success("Success", 'Connected!');
-    })
-    this.pusherChannel.bind('pusher:member_removed', () => { this.players-- });
+    this.pusherChannel = pusher.subscribe("presence-active-game-" + this.gameId);
 
     return this;
+  }
+
+  // initialise player and set turn
+  sendPlayerInfo(user: User) {
+    console.log("Send User Info to other users");
+    this.pusherChannel.trigger('client-presence-active-game-' + this.gameId, user);
+  }
+
+  // initialise player and set turn
+  removePlayerInfo(user: User) {
+    console.log("Send User Info to other users");
+    this.pusherChannel.trigger('client-presence-active-game-remove-' + this.gameId, user);
   }
 
   // Listen for `client-fire` events.
   // Update the board object and other properties when
   // event triggered
   listenForChanges(): ActiveGameComponent {
-    this.pusherChannel.bind('client-fire', (obj: any) => {
-      this.canPlay = !this.canPlay;
-      this.boards[obj.boardId] = obj.board;
-      this.boards[obj.player].player.score = obj.score;
+
+    //A memeber has left the game
+    this.pusherChannel.bind('pusher:member_removed', (member: any) => {
+      this.removePlayerInfo(this.user)
     });
+    this.pusherChannel.bind('client-presence-active-game-remove-' + this.gameId, (member: User) => {
+      this.pusherIdToUserNameMap.delete(member.id);
+    });
+
+    // A member has joined the game
+    this.pusherChannel.bind('pusher:subscription_succeeded', (members: any) => {
+      this.players.push(members);
+      this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
+      this.sendPlayerInfo(this.user);
+      //this.toastr.success("Success", 'Connected!');
+    })
+    this.pusherChannel.bind('client-presence-active-game-' + this.gameId, (member: User) => {
+      if (!this.pusherIdToUserNameMap.has(member.id)) {
+        this.pusherIdToUserNameMap.set(member.id, member.username);
+
+        this.sendPlayerInfo(this.user);
+      }
+    });
+
+    //Listen For Role Assignment
+    this.pusherChannel.bind('client-presence-active-game-' + this.gameId + "-" + this.user.id, (role: string) => {
+        this.role = role;
+        localStorage.setItem('role', role);
+    });
+    //Listen for vote changes
+
+    //Listen for chat
     return this;
   }
 
-  // initialise player and set turn
-  setPlayer(players: number = 0): ActiveGameComponent {
-    this.player = players - 1;
-    if (players == 1) {
-      this.canPlay = true;
-    } else if (players == 2) {
-      this.canPlay = false;
-    }
-    return this;
+  assignRoles() {
+    console.log("Assigning Roles");
+    let rolesMap = this.createRoles();
+
+    rolesMap.forEach((value: string, userId: string) => {
+      if (userId !== this.user.id) {
+        this.pusherChannel.trigger('client-presence-active-game-' + this.gameId + "-" + userId, value);
+      } else {
+        this.role = value;
+        localStorage.setItem('role', value);
+      }
+
+    });
   }
 
-  // helper function to get a query param
-  getQueryParam(name: any) {
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+  createRoles(): Map<string, string> {
+    let roleMap = new Map<string, string>();
+
+    let totalPlayers = this.pusherIdToUserNameMap.size;
+    let cop: number = this.game.cop ? 1 : 0;
+    let reporter: number = this.game.reporter ? 1 : 0;
+    let psychic: number = this.game.psychic ? 1 : 0;
+
+    let numVillagers = totalPlayers - this.game.numWerewolfPlayers;
+
+    let villagerCount = 0;
+    let werewolfCount = 0;
+    this.pusherIdToUserNameMap.forEach((value: string, key: string) => {
+      let randomSeed = Math.random();
+      if (randomSeed < this.game.numWerewolfPlayers / totalPlayers) {
+        if (werewolfCount < this.game.numWerewolfPlayers) {
+          roleMap.set(key, "werewolf");
+          werewolfCount++;
+        } else {
+          roleMap.set(key, "villager");
+          villagerCount++;
+        }
+      }else if (randomSeed < (this.game.numWerewolfPlayers / totalPlayers) + (numVillagers / totalPlayers)) {
+        if (villagerCount < numVillagers) {
+          roleMap.set(key, "villager");
+          villagerCount++;
+        } else {
+          roleMap.set(key, "werewolf");
+          werewolfCount++;
+        }
+      }
+    });
+
+    return roleMap;
   }
 
-  // helper function to create a unique presence channel
-  // name for each game
-  getUniqueId() {
-    return 'presence-' + Math.random().toString(36).substr(2, 8);
+  isCreator(): boolean {
+    return this.user.username === this.game.createdBy;
   }
 
   // check if player is a valid player for the game
   get validPlayer(): boolean {
-    return (this.players >= NUM_PLAYERS) && (this.player < NUM_PLAYERS);
+    return this.pusherIdToUserNameMap.has(this.user.id);
   }
 
-  // event handler for click event on
-  // each tile - fires torpedo at selected tile
-  fireTorpedo(e: any): ActiveGameComponent {
-    let id = e.target.id,
-      boardId = id.substring(1, 2),
-      row = id.substring(2, 3), col = id.substring(3, 4),
-      tile = this.boards[boardId].tiles[row][col];
-    if (!this.checkValidHit(boardId, tile)) {
-      return this;
-    }
-
-    if (tile.value == 1) {
-    //  this.toastr.success("You got this.", "HURRAAA! YOU SANK A SHIP!");
-      this.boards[boardId].tiles[row][col].status = 'win';
-      this.boards[this.player].player.score++;
-    } else {
-    //  this.toastr.info("Keep trying.", "OOPS! YOU MISSED THIS TIME");
-      this.boards[boardId].tiles[row][col].status = 'fail'
-    }
-    this.canPlay = false;
-    this.boards[boardId].tiles[row][col].used = true;
-    this.boards[boardId].tiles[row][col].value = "X";
-
-    // trigger `client-fire` event once a torpedo
-    // is successfully fired
-    this.pusherChannel.trigger('client-fire', {
-      player: this.player,
-      score: this.boards[this.player].player.score,
-      boardId: boardId,
-      board: this.boards[boardId]
-    });
-    return this;
-  }
-
-  checkValidHit(boardId: number, tile: any): boolean {
+  checkGameState(boardId: number, tile: any): boolean {
     if (boardId == this.player) {
-     // this.toastr.error("Don't commit suicide.", "You can't hit your own board.")
+      // this.toastr.error("Don't commit suicide.", "You can't hit your own board.")
       return false;
     }
-    if (this.winner) {
-     // this.toastr.error("Game is over");
+    if (false) {
+      // this.toastr.error("Game is over");
       return false;
     }
     if (!this.canPlay) {
-    //  this.toastr.error("A bit too eager.", "It's not your turn to play.");
+      //  this.toastr.error("A bit too eager.", "It's not your turn to play.");
       return false;
     }
     if (tile.value == "X") {
-    //  this.toastr.error("Don't waste your torpedos.", "You already shot here.");
+      //  this.toastr.error("Don't waste your torpedos.", "You already shot here.");
       return false;
     }
     return true;
-  }
-
-  createBoards(): ActiveGameComponent {
-    for (let i = 0; i < NUM_PLAYERS; i++)
-      this.activeGameService.createBoard(BOARD_SIZE);
-    return this;
-  }
-
-  // winner property to determine if a user has won the game.
-  // once a user gets a score higher than the size of the game
-  // board, he has won.
-  get winner(): any {
-    return this.boards.find(board => board.player.score >= BOARD_SIZE);
-  }
-
-  // get all boards and assign to boards property
-  get boards(): Board[] {
-    return this.activeGameService.getBoards()
   }
 }

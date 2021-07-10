@@ -29,3 +29,14 @@
 .werewolf-tile:hover {
   cursor: pointer;
 }
+
+.player-card {
+  display: inline-block;
+  min-width: 152px;
+  min-height: 150px;
+}
+
+.player-box {
+  margin: 5px;
+  display: inline-block;
+}

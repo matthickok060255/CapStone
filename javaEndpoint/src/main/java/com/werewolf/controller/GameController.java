@@ -43,7 +43,8 @@ public class GameController {
                       @RequestParam boolean isReporter,
                       @RequestParam boolean isCop,
                       @RequestParam Integer roundTimer,
-                      @RequestParam GameStateEnum gameState) throws ParseException {
+                      @RequestParam GameStateEnum gameState,
+                    @RequestParam String createdBy) throws ParseException {
         // @ResponseBody means the returned String is the response, not a view name
         // @RequestParam means it is a parameter from the GET or POST request
 
@@ -58,6 +59,7 @@ public class GameController {
         game.setCop(isCop);
         game.setRoundTimer(roundTimer);
         game.setGameState(gameState);
+        game.setCreatedBy(createdBy);
         return gameRepository.save(game);
     }
 
@@ -88,16 +90,17 @@ public class GameController {
 
         return gameRepository.findById(id)
                 .map(game -> {
-                    game.setName(game.getName());
-                    game.setPassword(game.getPassword());
-                    game.setMaxPlayers(game.getMaxPlayers());
-                    game.setMinPlayers(game.getMinPlayers());
-                    game.setNumWerewolfPlayers(game.getNumWerewolfPlayers());
-                    game.setPsychic(game.isPsychic());
-                    game.setReporter(game.isReporter());
-                    game.setCop(game.isCop());
-                    game.setStartTime(game.getStartTime());
-                    game.setRoundTimer(game.getRoundTimer());
+                    game.setName(newGame.getName());
+                    game.setPassword(newGame.getPassword());
+                    game.setMaxPlayers(newGame.getMaxPlayers());
+                    game.setMinPlayers(newGame.getMinPlayers());
+                    game.setNumWerewolfPlayers(newGame.getNumWerewolfPlayers());
+                    game.setPsychic(newGame.isPsychic());
+                    game.setReporter(newGame.isReporter());
+                    game.setCop(newGame.isCop());
+                    game.setStartTime(newGame.getStartTime());
+                    game.setRoundTimer(newGame.getRoundTimer());
+                    game.setCurrentPlayers(newGame.getCurrentPlayers());
                     ;
                     return gameRepository.save(game);
                 })

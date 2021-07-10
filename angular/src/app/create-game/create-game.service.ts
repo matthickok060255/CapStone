@@ -32,6 +32,7 @@ export class CreateGameService {
     params = params.append('isCop', game.cop);
     params = params.append('roundTimer', game.roundTimer);
     params = params.append('gameState', "CREATED");
+    params = params.append('createdBy', game.createdBy);
 
     return this.httpClient.post<Game>(this.REST_API_SERVER + "/createGame", params)
     .pipe(catchError(ServicesUtils.handleError));
@@ -45,5 +46,16 @@ export class CreateGameService {
       return this.httpClient.get<Game>(this.REST_API_SERVER + "/games/" + id)
       .pipe(catchError(ServicesUtils.handleError));
     }
+
+     /**
+   * Gets all of the current games that can be joined
+   * @returns Observable<Game>
+   */
+  updateGame(game: Game): Observable<Game> {
+
+
+    return this.httpClient.put<Game>(this.REST_API_SERVER + "/games/" + game.id, game)
+    .pipe(catchError(ServicesUtils.handleError));
+  }
 
 }

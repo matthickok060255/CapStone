@@ -6,7 +6,8 @@ export class Game {
     public password: string;
     public maxPlayers: number;
     public minPlayers: number;
-    public currentPlayers: number;
+    public currentPlayers!: string;
+    public createdBy!: string;
     public numWerewolfPlayers: number;
     public psychic: boolean;
     public reporter: boolean;
@@ -19,7 +20,6 @@ export class Game {
         name: string,
         maxPLayers: number,
         minPlayers: number,
-        currentPlayers: number,
         numWerewolfPlayers: number,
         psychic: boolean,
         reporter: boolean,
@@ -31,7 +31,6 @@ export class Game {
             this.name = name;
             this.maxPlayers = maxPLayers;
             this.minPlayers = minPlayers;
-            this.currentPlayers = currentPlayers
             this.password = password;
             this.numWerewolfPlayers = numWerewolfPlayers;
             this.psychic = psychic;

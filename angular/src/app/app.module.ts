@@ -15,7 +15,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { AlertComponent } from './alert/alert.component';
-import { BoardService } from './active-game/active-game.service';
 import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({

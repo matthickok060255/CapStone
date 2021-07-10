@@ -17,7 +17,7 @@ import { AccountService } from '../account/account.service';
 })
 export class CreateGameComponent implements OnInit, OnDestroy {
   private gameId!: number;
-  private subscriptions: Subscription[] = []
+  private subscriptions: Subscription[] = [];
   private game!: Game;
 
   pusherChannel: any;
@@ -36,6 +36,7 @@ export class CreateGameComponent implements OnInit, OnDestroy {
     private accountService: AccountService
   ) {
     this.user = this.accountService.userValue;
+    this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
   }
 
   // initialise Pusher and bind to presence channel
@@ -49,25 +50,36 @@ export class CreateGameComponent implements OnInit, OnDestroy {
 
     // bind to relevant Pusher presence channel
     this.pusherChannel = pusher.subscribe("presence-created-game-" + this.gameId);
-    this.pusherChannel.bind('client-presence-created-game-' + this.gameId, (member: User) => {
-      if (!this.pusherIdToUserNameMap.has(member.id)) {
-        this.pusherIdToUserNameMap.set(member.id, member.username);
-        this.sendPlayerInfo(this.user);
-      }
-    });
 
+
+    //A memeber has left the game
+    this.pusherChannel.bind('pusher:member_removed', (member: any) => {
+      this.removePlayerInfo(this.user)
+    });
     this.pusherChannel.bind('client-presence-created-game-remove-' + this.gameId, (member: User) => {
       this.pusherIdToUserNameMap.delete(member.id);
     });
+
+    // A member has joined the game
     this.pusherChannel.bind('pusher:subscription_succeeded', (members: any) => {
       this.players.push(members);
       this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
       this.sendPlayerInfo(this.user);
       //this.toastr.success("Success", 'Connected!');
     })
-    this.pusherChannel.bind('pusher:member_removed', (member: any) => {
-      this.removePlayerInfo(this.user)
+    this.pusherChannel.bind('client-presence-created-game-' + this.gameId, (member: User) => {
+      if (!this.pusherIdToUserNameMap.has(member.id)) {
+        this.pusherIdToUserNameMap.set(member.id, member.username);
+
+        this.sendPlayerInfo(this.user);
+      }
     });
+
+    //The game has been started
+    this.pusherChannel.bind('client-presence-created-game-start' + this.gameId, () => {
+      this.router.navigate(["/activeGame/" + this.gameId]);
+    });
+
     return this;
   }
 
@@ -84,7 +96,28 @@ export class CreateGameComponent implements OnInit, OnDestroy {
   }
 
   startActiveGame() {
-    this.router.navigate(["/activeGame/" + this.gameId]);
+    //Update game memembers then start game
+    if (this.pusherIdToUserNameMap.size > this.game.minPlayers) {
+      // MOVE INTO IF ONCE DONE TESTING
+    }
+    this.game.currentPlayers = "";
+    this.pusherIdToUserNameMap.forEach((value: string, key: string) => {
+      if (this.game.currentPlayers.length === 0) {
+        this.game.currentPlayers = key;
+      } else {
+        this.game.currentPlayers = this.game.currentPlayers + "," + key;
+      }
+    });
+    this.createGameService.updateGame(this.game).subscribe( data => {
+      console.log("Updated Game");
+      this.pusherChannel.trigger('client-presence-created-game-start' + this.gameId, this.game);
+      this.router.navigate(["/activeGame/" + this.gameId]);
+    });
+
+  }
+
+  isCreator(): boolean {
+    return this.user.username === this.game.createdBy;
   }
 
 
@@ -134,7 +167,6 @@ export class CreateGameComponent implements OnInit, OnDestroy {
     let newGame = new Game(this.createGameForm.controls['name'].value,
       this.createGameForm.controls['maxPlayers'].value,
       this.createGameForm.controls['minPlayers'].value,
-      1,
       this.createGameForm.controls['numWerewolfPlayers'].value,
       this.createGameForm.controls['psychic'].value,
       this.createGameForm.controls['reporter'].value,
@@ -143,6 +175,7 @@ export class CreateGameComponent implements OnInit, OnDestroy {
       new Date(),
       0,
       gameState.CREATED)
+      newGame.createdBy = this.user.username;
     this.createGameService.createGame(newGame)
       .subscribe(data => {
         this.router.navigate(["/createGame/" + data.id]);

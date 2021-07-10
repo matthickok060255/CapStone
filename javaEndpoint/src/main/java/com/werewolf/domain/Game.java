@@ -1,10 +1,8 @@
 package com.werewolf.domain;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Entity // This tells Hibernate to make a table out of this class
 public class Game {
@@ -15,7 +13,8 @@ public class Game {
     private String password;
     private Integer maxPlayers;
     private Integer minPlayers;
-    private Integer currentPlayers;
+    private String currentPlayers;
+    private String createdBy;
     private Integer numWerewolfPlayers;
     private boolean isPsychic;
     private boolean isReporter;
@@ -118,5 +117,21 @@ public class Game {
 
     public void setGameState(GameStateEnum gameState) {
         this.gameState = gameState;
+    }
+
+    public String getCurrentPlayers() {
+        return currentPlayers;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCurrentPlayers(String currentPlayers) {
+        this.currentPlayers = currentPlayers;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }
