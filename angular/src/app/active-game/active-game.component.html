@@ -1,19 +1,11 @@
 <div class="section">
   <div class="container">
     <div class="content">
-      <h1 class="title">Ready to sink some werewolfs?</h1>
-      <h6 class="subtitle is-6"><strong>Pusher werewolf</strong></h6>
-
-      <hr>
-
-      <section  class="notification is-success has-text-centered" style="color:white">
-        <h1>
-          Player  has won the game!
-        </h1>
-      </section>
+      <h1 *ngIf="!hasGameStarted">
+        Waiting for game to start...
+      </h1>
 
       <div *ngIf="game">
-        Test
         <div class="form-group">
           <button *ngIf="isCreator()" (click)="assignRoles()" class="mat-button">
             <span class="spinner-border spinner-border-sm mr-1"></span>
@@ -22,41 +14,61 @@
         </div>
       </div>
 
+      <section *ngIf="isDay && hasGameStarted" class="notification is-success has-text-centered" style="color:white">
+        <h1>
+          It is the day cycle
+        </h1>
+      </section>
 
-      <div *ngIf="player > 1">
-        <div class="notification is-danger">
-          Sorry, only 2 players can play at a time. You can start your own game by visiting <a href="{{ gameUrl }}">{{
-            gameUrl }}</a>
-        </div>
-      </div>
+      <section *ngIf="!isDay && hasGameStarted" class="notification is-success has-text-centered" style="color:white">
+        <h1>
+          It is the night cycle
+        </h1>
+      </section>
 
-      <div *ngIf="players">
-        <h2>Waiting for Players to Join</h2>
-        <h3 class="subtitle is-6">You can invite them with this link: {{ gameUrl }}?id={{ gameId }}. You can also open
-          <a href="{{ gameUrl }}?id={{ gameId }}" target="_blank">this link</a> in a new browser, to play all by
-          yourself.</h3>
-      </div>
-      <div>
+      <section *ngIf="villagersWon" class="notification is-success has-text-centered" style="color:white">
+        <h1>
+          The werewolves have been eliminated the villagers win
+        </h1>
+      </section>
 
-        <div class="column has-text-centered player-box" *ngFor="let item of pusherIdToUserNameMap | keyvalue">
-          <h5>
-            {{item.value}}
-          </h5>
+      <section *ngIf="werewolvesWon" class="notification is-success has-text-centered" style="color:white">
+        <h1>
+          The villagers have been killed and the werewolves win
+        </h1>
+      </section>
+
+      <section *ngIf="isEliminated" class="notification is-success has-text-centered" style="color:white">
+        <h1>
+          You have been Eliminated from the Game
+        </h1>
+      </section>
+
+      <hr>
+
+
+      <div *ngIf="hasGameStarted">
+        <div class="column has-text-centered player-box" *ngFor="let item of idToUserNameMap | keyvalue">
           <mat-card class="player-card">
-            {{item.key}}
+            <mat-card-title> {{item.value.username}} </mat-card-title>
+            <mat-card-subtitle  *ngIf="isDayCycle()">
+              <button [disabled]="hasVoted || item.value.isEliminated || isEliminated" (click)="voteClicked(item.value.id)" class="mat-button">
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+                Vote {{item.value.voteCount}}
+              </button>
+            </mat-card-subtitle>
+            <mat-card-subtitle  *ngIf="isWerewolf()">
+              <button [disabled]="isEliminated || hasVoted || item.value.isEliminated || item.value.role === 'werewolf'" (click)="voteClicked(item.value.id)" class="mat-button">
+                <span class="spinner-border spinner-border-sm mr-1"></span>
+                Kill {{item.value.voteCount}}
+              </button>
+            </mat-card-subtitle>
+            <mat-card-subtitle *ngIf="item.value.isEliminated">
+              This Player has been eliminated
+            </mat-card-subtitle>
           </mat-card>
-
         </div>
-
       </div>
-
-      <div class="has-text-centered">
-        <span class="tag is-warning" *ngIf="canPlay">Your turn!</span>
-        <span class="tag is-danger" *ngIf="!canPlay">Other player's turn.</span>
-        <h5 class="title"><small>{{ players }} player(s) in game</small></h5>
-      </div>
-
-
     </div>
   </div>
 </div>
@@ -65,9 +77,8 @@
   Current Role: {{role}}
 </div>
 
-
-<div> Current Players: {{pusherIdToUserNameMap.size}}
-  <div *ngFor="let item of pusherIdToUserNameMap | keyvalue">
-    <b>{{item.value}}</b>
+<div> Current Players: {{idToUserNameMap.size}}
+  <div *ngFor="let item of idToUserNameMap | keyvalue">
+    <b>{{item.value.username}}</b>
   </div>
 </div>

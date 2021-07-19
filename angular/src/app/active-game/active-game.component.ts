@@ -27,7 +27,13 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   gameUrl: string = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + "/activeGame";
   pusherChannel: any;
   players: any[] = [];
-  pusherIdToUserNameMap = new Map<string, string>();  //NEED TO CHANGE TO REFERENCE FULL ACTIVE USER OBJECT
+  idToUserNameMap = new Map<string, User>();
+  isDay: boolean = true;
+  hasVoted: boolean = false;
+  isEliminated: boolean = false;
+  hasGameStarted: boolean = false;
+  werewolvesWon: boolean = false;
+  villagersWon: boolean = false;
   user: User;
   role!: string; // CHANGE TO ENUM
 
@@ -41,9 +47,9 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   ) {
     this.user = this.accountService.userValue;
     this.role = String(localStorage.getItem("role"));
-    this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
+    this.idToUserNameMap.set(this.user.id, this.user);
 
-    this.initPusher();
+
 
   }
 
@@ -51,6 +57,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     this.subscriptions.push(this.route.params.subscribe(params => {
       this.gameId = params['id'];
       if (this.gameId) {
+        this.initPusher();
         this.listenForChanges();
         this.createGameService.getGamebyId(this.gameId).subscribe(game => {
           console.log(game);
@@ -85,7 +92,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     this.pusherChannel.trigger('client-presence-active-game-' + this.gameId, user);
   }
 
-  // initialise player and set turn
+  // Remove PLayer
   removePlayerInfo(user: User) {
     console.log("Send User Info to other users");
     this.pusherChannel.trigger('client-presence-active-game-remove-' + this.gameId, user);
@@ -101,54 +108,187 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
       this.removePlayerInfo(this.user)
     });
     this.pusherChannel.bind('client-presence-active-game-remove-' + this.gameId, (member: User) => {
-      this.pusherIdToUserNameMap.delete(member.id);
+      this.idToUserNameMap.delete(member.id);
     });
 
     // A member has joined the game
     this.pusherChannel.bind('pusher:subscription_succeeded', (members: any) => {
       this.players.push(members);
-      this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
+      this.idToUserNameMap.set(this.user.id, this.user);
       this.sendPlayerInfo(this.user);
       //this.toastr.success("Success", 'Connected!');
     })
     this.pusherChannel.bind('client-presence-active-game-' + this.gameId, (member: User) => {
-      if (!this.pusherIdToUserNameMap.has(member.id)) {
-        this.pusherIdToUserNameMap.set(member.id, member.username);
+      if (!this.idToUserNameMap.has(member.id)) {
+        this.idToUserNameMap.set(member.id, member);
 
         this.sendPlayerInfo(this.user);
       }
     });
 
     //Listen For Role Assignment
-    this.pusherChannel.bind('client-presence-active-game-' + this.gameId + "-" + this.user.id, (role: string) => {
-        this.role = role;
-        localStorage.setItem('role', role);
+    this.pusherChannel.bind('client-presence-active-game-roles' + this.gameId, (users: User[]) => {
+      this.resetGame();
+      users.forEach(user => {
+        this.idToUserNameMap.set(user.id, user);
+        if (user.id === this.user.id) {
+          this.user = user;
+          this.role = user.role;
+          this.hasGameStarted = true;
+        }
+      });
     });
-    //Listen for vote changes
 
+    // Listen for Vote / Cycle Change
+    this.pusherChannel.bind('client-presence-active-game-vote-' + this.gameId, (user: User) => {
+      this.idToUserNameMap.set(user.id, user);
+      // Check if everyone has voted to move to next cycle and resolve
+      this.checkCycles();
+    });
     //Listen for chat
     return this;
+  }
+
+  private checkCycles() {
+    let voteCount: number = 0
+    let wasTie = false;
+    let highVoteUser: User = new User();
+    this.idToUserNameMap.forEach(((user: User, userId: string) => {
+      user.voteCount = user.voteCount ? user.voteCount : 0;
+
+      if (!highVoteUser.id) {
+        highVoteUser = user;
+      } else if (user.voteCount > highVoteUser.voteCount) {
+        highVoteUser = user;
+        wasTie = false;
+      } else if (user.voteCount === highVoteUser.voteCount) {
+        wasTie = true;
+      }
+
+      voteCount = voteCount + user.voteCount;
+
+
+    }));
+
+    if (this.isDay && voteCount === this.getActiveNumPlayers()) {
+      this.eliminatePlayer(highVoteUser, wasTie);
+    }
+
+    if (!this.isDay && voteCount === this.getActiveNumWerewolves()) {
+      this.eliminatePlayer(highVoteUser, wasTie);
+    }
+
+
+  }
+
+  private eliminatePlayer(highVoteUser: User, wasTie: boolean) {
+    console.log("Switch to the next Cycle");
+    this.hasVoted = false;
+    this.isDay = !this.isDay;
+
+    if (!wasTie) {
+      let eliminatedUser = this.idToUserNameMap.get(highVoteUser.id);
+      if (eliminatedUser) {
+        eliminatedUser.isEliminated = true;
+      }
+
+      if (this.user.id === highVoteUser.id) {
+        this.isEliminated = true;
+      }
+    }
+    this.resetVoteCounts();
+    this.isGameOver();
+  }
+
+  private isGameOver() {
+    //check number of werewolves vs rest of player
+    let villagerCount: number = 0;
+    let werewolfCount: number = 0;
+    this.idToUserNameMap.forEach((user: User, key: string) => {
+      user.isEliminated = user.isEliminated ? user.isEliminated : false;
+      if (!user.isEliminated && user.role === "werewolf") {
+        werewolfCount++;
+      } else if (!user.isEliminated) {
+        villagerCount++;
+      }
+    });
+    if (werewolfCount === 0) {
+      this.villagersWon = true;
+      this.hasGameStarted = false;
+    }
+    if (werewolfCount >= villagerCount) {
+      this.werewolvesWon = true;
+      this.hasGameStarted = false;
+    }
+  }
+
+  private resetVoteCounts() {
+    this.idToUserNameMap.forEach(((user: User, userId: string) => {
+      user.voteCount = 0;
+    }));
+  }
+
+  private getActiveNumWerewolves(): number {
+    let count = 0;
+    this.idToUserNameMap.forEach(((user: User, userId: string) => {
+      if (!user.isEliminated && user.role === "werewolf") {
+        count = count + 1;
+      }
+    }));
+    return count;
+  }
+
+  private getActiveNumPlayers(): number {
+    let count = 0;
+    this.idToUserNameMap.forEach(((user: User, userId: string) => {
+      if (!user.isEliminated) {
+        count = count + 1;
+      }
+    }));
+    return count;
   }
 
   assignRoles() {
     console.log("Assigning Roles");
     let rolesMap = this.createRoles();
+    let users: User[] = [];
 
     rolesMap.forEach((value: string, userId: string) => {
-      if (userId !== this.user.id) {
-        this.pusherChannel.trigger('client-presence-active-game-' + this.gameId + "-" + userId, value);
-      } else {
-        this.role = value;
-        localStorage.setItem('role', value);
-      }
+      let user = this.idToUserNameMap.get(userId);
+      if (user) {
 
+        user.role = value;
+
+        if (user.id === this.user.id) {
+          this.user = user;
+          this.role = user.role;
+          this.hasGameStarted = true;
+        }
+
+        users.push(user);
+      }
     });
+    this.resetGame();
+    this.pusherChannel.trigger('client-presence-active-game-roles' + this.gameId, users);
+  }
+
+  private resetGame() {
+    this.isDay = true;
+    this.hasVoted = false;
+    this.villagersWon = false;
+    this.werewolvesWon = false;
+    this.isEliminated = false;
+    this.idToUserNameMap.forEach(((user: User, userId: string) => {
+      user.isEliminated = false;
+      user.voteCount = 0;
+    }));
   }
 
   createRoles(): Map<string, string> {
     let roleMap = new Map<string, string>();
 
-    let totalPlayers = this.pusherIdToUserNameMap.size;
+    let totalPlayers = this.idToUserNameMap.size;
+    // NEED TO IMPLEMENT EXTRA ROLES
     let cop: number = this.game.cop ? 1 : 0;
     let reporter: number = this.game.reporter ? 1 : 0;
     let psychic: number = this.game.psychic ? 1 : 0;
@@ -157,7 +297,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
 
     let villagerCount = 0;
     let werewolfCount = 0;
-    this.pusherIdToUserNameMap.forEach((value: string, key: string) => {
+    this.idToUserNameMap.forEach((value: User, key: string) => {
       let randomSeed = Math.random();
       if (randomSeed < this.game.numWerewolfPlayers / totalPlayers) {
         if (werewolfCount < this.game.numWerewolfPlayers) {
@@ -167,7 +307,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
           roleMap.set(key, "villager");
           villagerCount++;
         }
-      }else if (randomSeed < (this.game.numWerewolfPlayers / totalPlayers) + (numVillagers / totalPlayers)) {
+      } else if (randomSeed < (this.game.numWerewolfPlayers / totalPlayers) + (numVillagers / totalPlayers)) {
         if (villagerCount < numVillagers) {
           roleMap.set(key, "villager");
           villagerCount++;
@@ -182,12 +322,32 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   }
 
   isCreator(): boolean {
-    return this.user.username === this.game.createdBy;
+    return this.user.username === this.game.createdBy && !this.hasGameStarted;
+  }
+
+  isDayCycle(): boolean {
+    return this.isDay;
+  }
+
+  isWerewolf(): boolean {
+    return !this.isDay && this.role === "werewolf";
+  }
+
+  voteClicked(userId: string): void {
+    let votedUser = this.idToUserNameMap.get(userId)
+    if (votedUser) {
+      this.hasVoted = true;
+      votedUser.voteCount = votedUser.voteCount ? votedUser.voteCount + 1 : 1;
+      this.pusherChannel.trigger('client-presence-active-game-vote-' + this.gameId, votedUser);
+      this.checkCycles();
+    }
+
+
   }
 
   // check if player is a valid player for the game
   get validPlayer(): boolean {
-    return this.pusherIdToUserNameMap.has(this.user.id);
+    return this.idToUserNameMap.has(this.user.id);
   }
 
   checkGameState(boardId: number, tile: any): boolean {

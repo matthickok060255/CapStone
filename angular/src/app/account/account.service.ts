@@ -44,7 +44,12 @@ params = params.append('password', password);
     }
 
     register(user: User) {
-        return this.http.post(`${environment.apiUrl}/users/createUser`, user);
+      let params = new HttpParams();
+params = params.append('username', user.username);
+params = params.append('password', user.password);
+params = params.append('firstName', user.firstName);
+params = params.append('lastName', user.lastName);
+        return this.http.post(`${environment.apiUrl}/createUser`, params);
     }
 
     getAll() {
