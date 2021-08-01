@@ -22,7 +22,6 @@ describe('CreateGameService', () => {
       15,
       10,
       1,
-      1,
       true,
       false,
       true,

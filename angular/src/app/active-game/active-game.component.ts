@@ -1,11 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Board } from '../domainObjects/board';
-import { ActiveGameService } from './active-game.service';
 import Pusher from 'pusher-js';
 import { User } from '../domainObjects/user';
 import { AccountService } from '../account/account.service';
 import { Game } from '../domainObjects/game';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { CreateGameService } from '../create-game/create-game.service';
 import { Subscription } from 'rxjs';
 
@@ -17,7 +15,7 @@ const BOARD_SIZE: number = 6;
   selector: 'active-game-component',
   templateUrl: './active-game.component.html',
   styleUrls: ['./active-game.component.scss'],
-  providers: [ActiveGameService]
+  providers: []
 })
 export class ActiveGameComponent implements OnInit, OnDestroy {
   canPlay: boolean = true;
@@ -40,7 +38,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = []
 
   constructor(
-    private activeGameService: ActiveGameService,
     private accountService: AccountService,
     private route: ActivatedRoute,
     private createGameService: CreateGameService,
@@ -48,9 +45,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     this.user = this.accountService.userValue;
     this.role = String(localStorage.getItem("role"));
     this.idToUserNameMap.set(this.user.id, this.user);
-
-
-
   }
 
   ngOnInit() {
@@ -60,7 +54,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
         this.initPusher();
         this.listenForChanges();
         this.createGameService.getGamebyId(this.gameId).subscribe(game => {
-          console.log(game);
           this.game = game;
         });
       }
@@ -70,7 +63,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subscriptions.forEach((subscription) => subscription.unsubscribe())
   }
-
 
   // initialise Pusher and bind to presence channel
   initPusher(): ActiveGameComponent {
@@ -88,13 +80,11 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
 
   // initialise player and set turn
   sendPlayerInfo(user: User) {
-    console.log("Send User Info to other users");
     this.pusherChannel.trigger('client-presence-active-game-' + this.gameId, user);
   }
 
   // Remove PLayer
   removePlayerInfo(user: User) {
-    console.log("Send User Info to other users");
     this.pusherChannel.trigger('client-presence-active-game-remove-' + this.gameId, user);
   }
 
@@ -116,7 +106,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
       this.players.push(members);
       this.idToUserNameMap.set(this.user.id, this.user);
       this.sendPlayerInfo(this.user);
-      //this.toastr.success("Success", 'Connected!');
     })
     this.pusherChannel.bind('client-presence-active-game-' + this.gameId, (member: User) => {
       if (!this.idToUserNameMap.has(member.id)) {
@@ -149,7 +138,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     return this;
   }
 
-  private checkCycles() {
+  checkCycles() {
     let voteCount: number = 0
     let wasTie = false;
     let highVoteUser: User = new User();
@@ -177,12 +166,9 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     if (!this.isDay && voteCount === this.getActiveNumWerewolves()) {
       this.eliminatePlayer(highVoteUser, wasTie);
     }
-
-
   }
 
   private eliminatePlayer(highVoteUser: User, wasTie: boolean) {
-    console.log("Switch to the next Cycle");
     this.hasVoted = false;
     this.isDay = !this.isDay;
 
@@ -200,7 +186,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     this.isGameOver();
   }
 
-  private isGameOver() {
+  isGameOver() {
     //check number of werewolves vs rest of player
     let villagerCount: number = 0;
     let werewolfCount: number = 0;
@@ -249,7 +235,6 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
   }
 
   assignRoles() {
-    console.log("Assigning Roles");
     let rolesMap = this.createRoles();
     let users: User[] = [];
 
@@ -272,7 +257,7 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     this.pusherChannel.trigger('client-presence-active-game-roles' + this.gameId, users);
   }
 
-  private resetGame() {
+  resetGame() {
     this.isDay = true;
     this.hasVoted = false;
     this.villagersWon = false;
@@ -289,11 +274,40 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
 
     let totalPlayers = this.idToUserNameMap.size;
     // NEED TO IMPLEMENT EXTRA ROLES
-    let cop: number = this.game.cop ? 1 : 0;
-    let reporter: number = this.game.reporter ? 1 : 0;
-    let psychic: number = this.game.psychic ? 1 : 0;
+    let copIndex: number = -1;
+    let reporterIndex: number = -2;
+    let psychicIndex: number = -3;
 
     let numVillagers = totalPlayers - this.game.numWerewolfPlayers;
+
+    if (this.game.cop) {
+      copIndex = Math.random() % numVillagers;
+    }
+    if (this.game.reporter) {
+      reporterIndex = Math.random() % numVillagers;
+      if (copIndex) {
+        while (reporterIndex === copIndex) {
+          reporterIndex = Math.random() % numVillagers;
+        }
+      }
+    }
+    if (this.game.reporter) {
+      reporterIndex = Math.random() % numVillagers;
+      if (copIndex) {
+        while (reporterIndex === copIndex) {
+          reporterIndex = Math.random() % numVillagers;
+        }
+      }
+    }
+
+    if (this.game.psychic) {
+      psychicIndex = Math.random() % numVillagers;
+      if (copIndex) {
+        while (psychicIndex === copIndex || psychicIndex === reporterIndex) {
+          psychicIndex = Math.random() % numVillagers;
+        }
+      }
+    }
 
     let villagerCount = 0;
     let werewolfCount = 0;
@@ -304,12 +318,12 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
           roleMap.set(key, "werewolf");
           werewolfCount++;
         } else {
-          roleMap.set(key, "villager");
+          roleMap.set(key, this.getRole(copIndex, reporterIndex, psychicIndex, villagerCount));
           villagerCount++;
         }
       } else if (randomSeed < (this.game.numWerewolfPlayers / totalPlayers) + (numVillagers / totalPlayers)) {
         if (villagerCount < numVillagers) {
-          roleMap.set(key, "villager");
+          roleMap.set(key, this.getRole(copIndex, reporterIndex, psychicIndex, villagerCount));
           villagerCount++;
         } else {
           roleMap.set(key, "werewolf");
@@ -319,6 +333,19 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
     });
 
     return roleMap;
+  }
+
+  getRole(copIndex: number, reporterIndex: number, psychicIndex: number, index: number): string {
+    if (copIndex === index) {
+      return "cop";
+    }
+    if (reporterIndex === index) {
+      return "reporter";
+    }
+    if (psychicIndex === index) {
+      return "psychic";
+    }
+    return "villager";
   }
 
   isCreator(): boolean {
@@ -341,32 +368,28 @@ export class ActiveGameComponent implements OnInit, OnDestroy {
       this.pusherChannel.trigger('client-presence-active-game-vote-' + this.gameId, votedUser);
       this.checkCycles();
     }
+  }
 
+  revealClicked(userId: string) {
+    let votedUser = this.idToUserNameMap.get(userId)
+    if (votedUser) {
+      this.hasVoted = true;
+      votedUser.isRevealed = true;
+      this.pusherChannel.trigger('client-presence-active-game-vote-' + this.gameId, votedUser); //Fix
+    }
+  }
 
+  protectClicked(userId: string) {
+    let votedUser = this.idToUserNameMap.get(userId)
+    if (votedUser) {
+      this.hasVoted = true;
+      votedUser.isProtected = true;
+      this.pusherChannel.trigger('client-presence-active-game-vote-' + this.gameId, votedUser); //Fix
+    }
   }
 
   // check if player is a valid player for the game
   get validPlayer(): boolean {
     return this.idToUserNameMap.has(this.user.id);
-  }
-
-  checkGameState(boardId: number, tile: any): boolean {
-    if (boardId == this.player) {
-      // this.toastr.error("Don't commit suicide.", "You can't hit your own board.")
-      return false;
-    }
-    if (false) {
-      // this.toastr.error("Game is over");
-      return false;
-    }
-    if (!this.canPlay) {
-      //  this.toastr.error("A bit too eager.", "It's not your turn to play.");
-      return false;
-    }
-    if (tile.value == "X") {
-      //  this.toastr.error("Don't waste your torpedos.", "You already shot here.");
-      return false;
-    }
-    return true;
   }
 }

@@ -1,7 +1,7 @@
 import { CreateGameService } from './create-game.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Params, ActivatedRoute, Router } from '@angular/router';
-import { Observable, of, Subscription } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
 import { User } from '../domainObjects/user';
 import { CreateGameComponent } from './create-game.component';
 import { FormBuilder } from '@angular/forms';
@@ -24,6 +24,7 @@ class mockRouter {
 }
 
 class mockAccountService {
+  userValue: User = new User();
   login(user: User): Observable<any> {
     return of(null);
   }
@@ -34,7 +35,6 @@ class mockCreateGameService {
     let newGame = new Game("name",
       15,
       10,
-      1,
       1,
       true,
       false,
@@ -55,6 +55,20 @@ class mockCreateGameService {
       15,
       10,
       1,
+      true,
+      false,
+      true,
+      "",
+      new Date(),
+      0,
+      gameState.CREATED)
+      return of(newGame);
+    }
+
+    updateGame(game: Game): Observable<any> {
+      let newGame = new Game("name",
+      15,
+      10,
       1,
       true,
       false,

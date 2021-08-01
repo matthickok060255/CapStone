@@ -8,4 +8,6 @@ export class User {
   voteCount: number = 0;
   isEliminated: boolean = false;
   role!: string;
+  isRevealed: boolean = false;
+  isProtected: boolean = false;
 }
