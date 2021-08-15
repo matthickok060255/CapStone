@@ -1,4 +1,5 @@
-<div>
+<div fxLayout="row">
+  <div>
   <form [formGroup]="createGameForm" (ngSubmit)="onSubmit()">
     <div class="form-group">
       <label for="name">Game Name:</label>
@@ -34,8 +35,8 @@
     </div>
     <div class="form-group">
       <label for="numWerewolfPlayers">Number of Werewolves: </label>
-      <input [attr.disabled]="isActive ? '' : null" type="numWerewolfPlayers" formControlName="numWerewolfPlayers" class="form-control"
-        [ngClass]="{ 'is-invalid': f.numWerewolfPlayers.errors }" />
+      <input [attr.disabled]="isActive ? '' : null" type="numWerewolfPlayers" formControlName="numWerewolfPlayers"
+        class="form-control" [ngClass]="{ 'is-invalid': f.numWerewolfPlayers.errors }" />
       <div *ngIf="f.numWerewolfPlayers.errors" class="invalid-feedback">
         <div *ngIf="f.numWerewolfPlayers.errors.required">Number of Werewolves is required</div>
       </div>
@@ -50,7 +51,8 @@
     </div>
     <div class="form-group">
       <label for="reporter">Is there a reporter: </label>
-      <mat-checkbox [disabled]="isActive" type="reporter" formControlName="reporter" class="checkboxStyle"></mat-checkbox>
+      <mat-checkbox [disabled]="isActive" type="reporter" formControlName="reporter" class="checkboxStyle">
+      </mat-checkbox>
     </div>
     <div class="form-group">
       <button *ngIf="!isActive" class="mat-button">
@@ -70,6 +72,10 @@
   <div> Current Players: {{pusherIdToUserNameMap.size}}
     <div *ngFor="let item of pusherIdToUserNameMap | keyvalue">
       <b>{{item.value}}</b>
+    </div>
   </div>
+</div>
+  <div>
+    <chat-component *ngIf="chatId" [username]="user.username" [chatId]="chatId"></chat-component>
   </div>
 </div>

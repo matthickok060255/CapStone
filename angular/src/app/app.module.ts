@@ -16,6 +16,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { AlertComponent } from './alert/alert.component';
 import { ReactiveFormsModule } from '@angular/forms';
+import { ChatComponent } from './chat/chat.component';
 
 @NgModule({
   declarations: [
@@ -24,6 +25,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     CreateGameComponent,
     GameLobbyComponent,
     NaviationBarComponent,
+    ChatComponent,
     AlertComponent
   ],
   imports: [

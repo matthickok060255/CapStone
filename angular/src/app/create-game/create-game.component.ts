@@ -24,6 +24,7 @@ export class CreateGameComponent implements OnInit, OnDestroy {
   players: any[] = [];
   pusherIdToUserNameMap = new Map<string, string>();
   user: User;
+  chatId!: string;
 
   createGameForm!: FormGroup;
   isActive: boolean = false;
@@ -138,6 +139,7 @@ export class CreateGameComponent implements OnInit, OnDestroy {
     this.subscriptions.push(this.route.params.subscribe(params => {
       this.gameId = params['id'];
       if (this.gameId) {
+        this.chatId = "create-game-" + this.gameId;
         this.initPusher();
         this.isActive = true;
         this.createGameService.getGamebyId(this.gameId).subscribe(game => {

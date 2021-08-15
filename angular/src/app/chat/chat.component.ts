@@ -1,40 +1,39 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnInit, Input, ViewChild } from "@angular/core";
 import Pusher from "pusher-js";
-import { Subscription } from "rxjs";
-import { AccountService } from "../account/account.service";
-import { User } from "../domainObjects/user";
+import { Message } from "../domainObjects/message";
 
 @Component({
   selector: 'chat-component',
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss']
 })
-export class CreateGameComponent implements OnInit, OnDestroy {
-  private gameId!: number;
-  private subscriptions: Subscription[] = [];
+export class ChatComponent implements OnInit {
+
+
+  @Input() username: string = "";
+  @Input() chatId: string = "";
+  @ViewChild('message') message: any;
+
+  messages: Message[] = [];
 
   pusherChannel: any;
-  players: any[] = [];
-  pusherIdToUserNameMap = new Map<string, string>();
-  user: User;
 
-  isActive: boolean = false;
 
-  constructor(
-    private accountService: AccountService
-  ) {
-    this.user = this.accountService.userValue;
-    this.pusherIdToUserNameMap.set(this.user.id, this.user.username);
+  constructor() {
+
   }
 
-  ngOnInit() {}
-
-  ngOnDestroy() {
-    this.subscriptions.forEach((subscription) => subscription.unsubscribe())
+  ngOnInit() {
+    console.log("Here");
+    this.initPusher();
+    this.pusherChannel.bind('client-new-message', (message: Message) => {
+      this.messages.push(message);
+    });
   }
+
 
   // initialise Pusher and bind to presence channel
-  initPusher(): CreateGameComponent {
+  initPusher(): ChatComponent {
 
     // init pusher
     const pusher = new Pusher('cd3b623ce769e9f6154f', {
@@ -43,7 +42,18 @@ export class CreateGameComponent implements OnInit, OnDestroy {
     });
 
     // bind to relevant Pusher presence channel
-    this.pusherChannel = pusher.subscribe("presence-chat-" + this.gameId);
+    this.pusherChannel = pusher.subscribe("presence-chat-" + this.chatId);
 
     return this;
   }
+
+  sendMessage() {
+    const message: Message = {
+       user: this.username,
+       text: this.message.nativeElement.value,
+    }
+    this.pusherChannel.trigger('client-new-message', message);
+    this.messages.push(message);
+  }
+
+}

@@ -64,19 +64,16 @@
               </button>
             </mat-card-subtitle>
             <mat-card-subtitle  *ngIf="user.role === 'cop' && isDay">
-              <button [disabled]="isEliminated || hasVoted" (click)="voteClicked(item.value.id)" class="mat-button">
+              <button [disabled]="isEliminated || hasVoted" (click)="protectClicked(item.value.id)" class="mat-button">
                 <span class="spinner-border spinner-border-sm mr-1"></span>
                 Protect
               </button>
             </mat-card-subtitle>
-            <mat-card-subtitle  *ngIf="user.role === 'physic' && isDay">
-              <button [disabled]="isEliminated || hasVoted" (click)="voteClicked(item.value.id)" class="mat-button">
+            <mat-card-subtitle  *ngIf="user.role === 'physic' && isDay && !item.value.isRevealed">
+              <button [disabled]="isEliminated || hasVoted" (click)="revealClicked(item.value.id)" class="mat-button">
                 <span class="spinner-border spinner-border-sm mr-1"></span>
                 Reveal Role
               </button>
-            </mat-card-subtitle>
-            <mat-card-subtitle *ngIf="user.role === 'physic' && item.value.isRevealed">
-              {{item.value.role}}
             </mat-card-subtitle>
             <mat-card-subtitle *ngIf="user.role === 'physic' && item.value.isRevealed">
               {{item.value.role}}
